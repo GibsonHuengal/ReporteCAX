@@ -74,8 +74,9 @@ Para detener el servidor: `Ctrl + C`.
 
 El archivo `render.yaml` configura un servicio web con Gunicorn y genera una
 `SECRET_KEY` privada automáticamente. Para publicarlo, sube este repositorio a
-GitHub, crea un **Web Service** en Render conectado al repositorio y despliega
-el Blueprint detectado. Render mostrará la URL pública al terminar.
+GitHub, crea un **Blueprint Instance** en Render conectado al repositorio
+`GibsonHuengal/ReporteCAX` y aplica el Blueprint detectado. Render mostrará la
+URL pública al terminar.
 
 En la instancia publicada, cada usuario debe registrarse desde la pantalla de
 inicio; no se crean las cuentas de prueba con permisos de administrador. El plan
