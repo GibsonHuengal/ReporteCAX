@@ -1,0 +1,52 @@
+@echo off
+chcp 65001 >nul
+setlocal
+cd /d "%~dp0"
+
+echo ============================================================
+echo    Ciudad Inteligente - Cajamarca  ^|  VERSION ANTIGUA
+echo    (codigo monolitico, sin SOLID)
+echo ============================================================
+
+where python >nul 2>nul
+if errorlevel 1 (
+  echo [ERROR] No se encontro Python.
+  echo         Instala Python 3.10 o superior desde https://www.python.org/downloads/
+  pause
+  exit /b 1
+)
+
+if not exist ".venv\Scripts\python.exe" (
+  echo [1/4] Creando entorno virtual ^(.venv^)...
+  python -m venv .venv
+  if errorlevel 1 (
+    echo [ERROR] No se pudo crear el entorno virtual.
+    pause
+    exit /b 1
+  )
+) else (
+  echo [1/4] Entorno virtual ya existe.
+)
+
+echo [2/4] Instalando dependencias...
+".venv\Scripts\python.exe" -m pip install --disable-pip-version-check -q -r requirements.txt
+if errorlevel 1 (
+  echo [ERROR] Fallo la instalacion de dependencias.
+  pause
+  exit /b 1
+)
+
+if not exist "data\users.json" (
+  echo [3/4] Creando usuarios de prueba...
+  ".venv\Scripts\python.exe" seed_users.py
+) else (
+  echo [3/4] Usuarios de prueba ya existen.
+)
+
+echo [4/4] Iniciando servidor en http://127.0.0.1:5001
+echo        Presiona Ctrl+C para detener.
+echo.
+set PORT=5001
+".venv\Scripts\python.exe" app.py
+
+pause

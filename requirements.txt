@@ -1,0 +1,19 @@
+# ============================================================================
+# Dependencias del proyecto "Ciudad Inteligente · Cajamarca"
+# (base) + adaptación "EcoEco / BarrioVivo" (IA local + gamificación)
+#
+# Equivalencias con la app Android original del prompt:
+#   Flask            -> framework de la app (equivalente a Android SDK)
+#   Pillow + NumPy   -> IA local de imágenes (equivalente a TensorFlow Lite)
+#   Werkzeug         -> FileStorage para subir fotos (equivalente a Storage)
+# ============================================================================
+Flask==3.0.3
+gunicorn==23.0.0
+itsdangerous==2.2.0
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+Werkzeug==3.1.8
+
+# --- IA local (clasificador de imágenes on-server, sin APIs externas) ---
+Pillow==12.2.0
+numpy==2.4.6

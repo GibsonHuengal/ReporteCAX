@@ -1,0 +1,227 @@
+/* Variables globales de color para mantener la paleta visual consistente */
+:root {
+    --primary: #0d6efd;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --success: #198754;
+    --dark: #0f172a;
+    --soft: #f5f7fb;
+}
+
+/* Fondo general y tipo de letra de la aplicación */
+body {
+    background: linear-gradient(180deg, #f4f7fb 0%, #edf3ff 100%);
+    font-family: Arial, sans-serif;
+}
+
+/* Encabezado principal con fondo degradado */
+.hero {
+    background: linear-gradient(135deg, #dbeafe, #f8fafc);
+    border: none;
+    border-radius: 20px;
+}
+
+/* Tarjeta de estadísticas del dashboard */
+.stats-box {
+    background: linear-gradient(135deg, #111827, #1f2937);
+    color: white;
+    border-radius: 18px;
+    padding: 28px 16px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+.stat-label {
+    opacity: 0.85;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
+}
+
+/* Tarjetas de alertas con estilos por severidad */
+.analytics-card {
+    border-radius: 18px;
+    border: none;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.analytics-card.critical {
+    background: linear-gradient(135deg, #fee2e2, #fff1f2);
+}
+
+.analytics-card.warning {
+    background: linear-gradient(135deg, #fef3c7, #fff7ed);
+}
+
+.analytics-card.success {
+    background: linear-gradient(135deg, #dcfce7, #f0fdf4);
+}
+
+/* Ajustes del contenedor del mapa */
+#mapa {
+    border-radius: 0 0 12px 12px;
+}
+
+/* Badges que indican la severidad por zona */
+.zone-severity-badge {
+    font-size: 0.82rem;
+    padding: 0.5rem 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.zone-severity-badge.critico {
+    background: #dc3545;
+    color: white;
+}
+
+.zone-severity-badge.intermedio {
+    background: #ffc107;
+    color: #1f2937;
+}
+
+.zone-severity-badge.bajo {
+    background: #198754;
+    color: white;
+}
+
+/* Estilo general para los marcadores del mapa */
+.report-pin {
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 4px rgba(13,110,253,0.2);
+}
+
+/* Estética de la lista de reportes */
+.list-group-item {
+    border-left: 0;
+    border-right: 0;
+}
+
+.report-item {
+    cursor: pointer;
+}
+
+/* Efecto visual al pasar el mouse sobre cada reporte */
+.report-item:hover {
+    background: #f8fafc;
+}
+
+/* Etiquetas de tipo de problema */
+.tag {
+    display: inline-block;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 0.35rem;
+    background: #e0f2fe;
+    color: #0c4a6e;
+}
+
+/* Ajustes responsivos para tabletas y móviles */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2.2rem;
+    }
+}
+
+
+/* ============================================================
+   Adaptación "EcoEco / BarrioVivo"
+   ============================================================ */
+
+/* Marcadores personalizados del mapa (divIcon de Leaflet) */
+.eco-marker {
+    background: transparent !important;
+    border: none !important;
+}
+.eco-marker:hover { filter: brightness(1.08); }
+
+/* Popups del mapa */
+.leaflet-popup-content { margin: 12px 14px; }
+.leaflet-popup-content-wrapper { border-radius: 14px; }
+
+/* Botón de voto dentro de la lista de reportes */
+.upvote-btn:active { transform: scale(0.96); }
+
+
+/* ---------- Wrapper del mapa ---------- */
+.map-wrapper {
+    position: relative;
+    border-bottom-left-radius: var(--r-lg, 18px);
+    border-bottom-right-radius: var(--r-lg, 18px);
+    overflow: hidden;
+}
+
+/* ---------- Pin central (estilo Google Maps) ---------- */
+.center-pin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    z-index: 500;              /* por encima de los tiles, bajo los controles */
+    pointer-events: none;      /* NO bloquea el arrastre del mapa */
+    color: #ef4444;
+    font-size: 2.2rem;
+    line-height: 1;
+    filter: drop-shadow(0 6px 6px rgba(15,23,42,.35));
+    animation: pinBounce .9s ease-out;
+}
+
+.center-pin i {
+    display: inline-block;
+    animation: pinPulse 2s ease-in-out infinite;
+}
+
+/* Sombra elíptica bajo el pin */
+.pin-shadow {
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 5px;
+    background: rgba(15,23,42,.35);
+    border-radius: 50%;
+    filter: blur(2px);
+}
+
+@keyframes pinBounce {
+    0%   { transform: translate(-50%, -180%); opacity: 0; }
+    60%  { transform: translate(-50%, -90%);  opacity: 1; }
+    100% { transform: translate(-50%, -100%); }
+}
+
+@keyframes pinPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+}
+
+/* ---------- Hint inferior ---------- */
+.map-hint {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 500;
+    background: rgba(15, 23, 42, .82);
+    color: #fff;
+    padding: .45rem .9rem;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 500;
+    letter-spacing: .01em;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    pointer-events: none;
+    box-shadow: 0 6px 16px rgba(15,23,42,.25);
+}
+.map-hint i { color: #5eead4; font-size: .9rem; }

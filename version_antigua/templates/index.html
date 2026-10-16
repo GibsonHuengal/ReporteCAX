@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Inteligente de Problemas Urbanos · Cajamarca</title>
+
+    <!-- Fuentes modernas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Iconos Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Leaflet + plugins (heatmap y clustering) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        :root {
+            --brand-1: #4f46e5;
+            --brand-2: #06b6d4;
+            --brand-3: #8b5cf6;
+            --ink-900: #0f172a;
+            --ink-700: #334155;
+            --ink-500: #64748b;
+            --surface: #ffffff;
+            --bg-soft: #f5f7fb;
+            --radius-lg: 18px;
+            --radius-md: 14px;
+            --shadow-sm: 0 2px 6px rgba(15, 23, 42, .06);
+            --shadow-md: 0 10px 30px rgba(15, 23, 42, .08);
+            --shadow-lg: 0 20px 45px rgba(15, 23, 42, .12);
+        }
+
+        * { -webkit-font-smoothing: antialiased; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            color: var(--ink-900);
+            background:
+                radial-gradient(1200px 600px at 100% -10%, rgba(79, 70, 229, .08), transparent 60%),
+                radial-gradient(900px 500px at -10% 10%, rgba(6, 182, 212, .08), transparent 60%),
+                var(--bg-soft);
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4, .navbar-brand {
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            letter-spacing: -0.02em;
+        }
+
+        /* ---------- Navbar ---------- */
+        .navbar {
+            background: rgba(15, 23, 42, .85) !important;
+            backdrop-filter: saturate(180%) blur(12px);
+            -webkit-backdrop-filter: saturate(180%) blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,.06);
+            padding-top: .85rem;
+            padding-bottom: .85rem;
+        }
+        .navbar-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: .6rem;
+            font-weight: 800;
+            font-size: 1.15rem;
+        }
+        .navbar-brand::before {
+            content: "\F3E6";
+            font-family: "bootstrap-icons";
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+            color: white;
+            font-size: .95rem;
+            box-shadow: 0 6px 18px rgba(79,70,229,.45);
+        }
+        .navbar .nav-link {
+            font-weight: 500;
+            color: rgba(255,255,255,.78) !important;
+            padding: .5rem .9rem !important;
+            border-radius: 10px;
+            transition: all .2s ease;
+        }
+        .navbar .nav-link:hover {
+            color: #fff !important;
+            background: rgba(255,255,255,.08);
+        }
+        .navbar .badge {
+            font-weight: 600;
+            padding: .5rem .75rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,.12) !important;
+            color: #fff !important;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+        }
+        .navbar .badge::before {
+            content: "\F4DA";
+            font-family: "bootstrap-icons";
+            font-size: 1rem;
+        }
+        .navbar .badge.eco::before {
+            content: "\F2C1"; /* bi-cash-coin */
+            color: #5eead4;
+        }
+        .navbar .btn-outline-light {
+            border-radius: 10px;
+            font-weight: 500;
+            padding: .4rem .9rem;
+        }
+
+        /* ---------- Hero ---------- */
+        .hero {
+            border: none;
+            border-radius: var(--radius-lg);
+            background:
+                radial-gradient(600px 300px at 90% 10%, rgba(79,70,229,.18), transparent 60%),
+                linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(79,70,229,.10) 0, transparent 40%),
+                radial-gradient(circle at 80% 60%, rgba(6,182,212,.10) 0, transparent 40%);
+            pointer-events: none;
+        }
+        .hero h1 {
+            font-weight: 800;
+            font-size: clamp(1.7rem, 2.4vw, 2.4rem);
+            line-height: 1.15;
+            background: linear-gradient(120deg, #1e1b4b, #4338ca 60%, #0891b2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .hero .lead {
+            color: var(--ink-500);
+            font-size: 1.05rem;
+            max-width: 55ch;
+        }
+        .hero .btn-lg {
+            padding: .8rem 1.4rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: transform .15s ease, box-shadow .2s ease;
+        }
+        .hero .btn-lg:hover { transform: translateY(-2px); }
+        .hero .btn-primary {
+            background: linear-gradient(135deg, var(--brand-1), var(--brand-3));
+            border: none;
+            box-shadow: 0 10px 24px rgba(79,70,229,.35);
+        }
+        .hero .btn-outline-dark {
+            border: 1.5px solid var(--ink-900);
+            color: var(--ink-900);
+            background: transparent;
+        }
+        .hero .btn-outline-dark:hover {
+            background: var(--ink-900);
+            color: #fff;
+        }
+
+        /* Stats box */
+        .stats-box {
+            background: linear-gradient(135deg, #ffffff, #f1f5ff);
+            border: 1px solid rgba(79,70,229,.15);
+            border-radius: var(--radius-md);
+            padding: 1.8rem 1.5rem;
+            box-shadow: var(--shadow-sm);
+            display: inline-block;
+            min-width: 210px;
+            position: relative;
+        }
+        .stats-box::before {
+            content: "\F4F2";
+            font-family: "bootstrap-icons";
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(79,70,229,.4);
+        }
+        .stat-number {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 800;
+            font-size: 3rem;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .stat-label {
+            color: var(--ink-500);
+            font-size: .9rem;
+            font-weight: 500;
+            margin-top: .35rem;
+        }
+
+        /* ---------- Analytics cards ---------- */
+        .analytics-card {
+            border: none;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            position: relative;
+            transition: transform .2s ease, box-shadow .2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+        .analytics-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+        .analytics-card .card-body { padding: 1.5rem; }
+        .analytics-card h3 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin: .35rem 0 .5rem;
+            color: var(--ink-900);
+        }
+        .analytics-card p {
+            color: var(--ink-500);
+            font-size: .9rem;
+            margin: 0;
+        }
+        .analytics-card .small {
+            font-size: .72rem;
+            letter-spacing: .08em;
+            color: var(--ink-500);
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+        }
+        .analytics-card.critical { background: linear-gradient(135deg, #fff1f2, #ffe4e6); }
+        .analytics-card.critical .small::before {
+            content: "\F33A"; font-family: "bootstrap-icons"; color: #e11d48;
+        }
+        .analytics-card.critical h3 { color: #9f1239; }
+
+        .analytics-card.warning { background: linear-gradient(135deg, #fffbeb, #fef3c7); }
+        .analytics-card.warning .small::before {
+            content: "\F5A1"; font-family: "bootstrap-icons"; color: #d97706;
+        }
+        .analytics-card.warning h3 { color: #92400e; }
+
+        .analytics-card.success { background: linear-gradient(135deg, #ecfdf5, #d1fae5); }
+        .analytics-card.success .small::before {
+            content: "\F2C1"; font-family: "bootstrap-icons"; color: #059669;
+        }
+        .analytics-card.success h3 { color: #065f46; }
+
+        /* ---------- Cards / Sections ---------- */
+        .card {
+            border: none;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            background: var(--surface);
+        }
+        .card-header {
+            background: #fff !important;
+            border-bottom: 1px solid rgba(15,23,42,.06) !important;
+            padding: 1rem 1.25rem;
+            font-weight: 700 !important;
+            font-size: .95rem;
+            color: var(--ink-900);
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            border-top-left-radius: var(--radius-md) !important;
+            border-top-right-radius: var(--radius-md) !important;
+        }
+        .card-header::before {
+            content: "";
+            width: 6px; height: 6px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+            box-shadow: 0 0 0 4px rgba(79,70,229,.12);
+        }
+        .card-header .map-tools {
+            margin-left: auto;
+            display: inline-flex;
+            gap: .4rem;
+        }
+        .map-tools .btn {
+            font-size: .75rem;
+            font-weight: 600;
+            border-radius: 999px;
+            padding: .3rem .75rem;
+        }
+
+        /* ---------- Mapa ---------- */
+        #mapa {
+            height: 520px;
+            width: 100%;
+            border-bottom-left-radius: var(--radius-md);
+            border-bottom-right-radius: var(--radius-md);
+            z-index: 1;
+        }
+
+        /* ---------- Lista de reportes ---------- */
+        #reportsList { max-height: 520px; overflow-y: auto; }
+        #reportsList::-webkit-scrollbar { width: 6px; }
+        #reportsList::-webkit-scrollbar-thumb {
+            background: rgba(15,23,42,.15); border-radius: 3px;
+        }
+        .list-group-item {
+            border: none;
+            border-bottom: 1px solid rgba(15,23,42,.06);
+            padding: 1rem 1.25rem;
+            transition: background .15s ease;
+        }
+        .list-group-item:last-child { border-bottom: none; }
+        .list-group-item:hover { background: #f8fafc; }
+        .report-thumb {
+            width: 54px; height: 54px; object-fit: cover;
+            border-radius: 10px; flex-shrink: 0;
+            border: 1px solid rgba(15,23,42,.08);
+        }
+        .status-pill {
+            font-size: .68rem; font-weight: 700; letter-spacing: .03em;
+            padding: .2rem .55rem; border-radius: 999px; text-transform: uppercase;
+        }
+        .status-PENDIENTE { background: #fef3c7; color: #92400e; }
+        .status-EN_PROCESO { background: #dbeafe; color: #1e40af; }
+        .status-RESUELTO { background: #d1fae5; color: #065f46; }
+        .upvote-btn {
+            border: 1px solid rgba(15,23,42,.12); background: #fff;
+            border-radius: 999px; font-size: .72rem; font-weight: 700;
+            padding: .2rem .6rem; color: var(--ink-700);
+            display: inline-flex; align-items: center; gap: .3rem;
+        }
+        .upvote-btn:hover { background: #eef2ff; border-color: var(--brand-1); color: var(--brand-1); }
+
+        /* ---------- Formulario ---------- */
+        #reportar .card-body { padding: 2rem; }
+        #reportar h2 {
+            font-weight: 800;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem !important;
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+        }
+        #reportar h2::before {
+            content: "\F4CA";
+            font-family: "bootstrap-icons";
+            width: 38px; height: 38px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--brand-1), var(--brand-3));
+            color: #fff;
+            font-size: 1.05rem;
+            box-shadow: 0 8px 20px rgba(79,70,229,.35);
+        }
+        .form-label {
+            font-weight: 600;
+            font-size: .85rem;
+            color: var(--ink-700);
+            margin-bottom: .35rem;
+            letter-spacing: .01em;
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f0;
+            padding: .65rem .9rem;
+            font-size: .95rem;
+            transition: border-color .15s, box-shadow .15s;
+            background: #fff;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--brand-1);
+            box-shadow: 0 0 0 4px rgba(79,70,229,.12);
+        }
+
+        /* Severity buttons */
+        #severityButtons .severity-btn {
+            border-radius: 999px;
+            padding: .45rem 1.1rem;
+            font-weight: 600;
+            font-size: .85rem;
+            border: 1.5px solid transparent;
+            transition: all .15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+        }
+        #severityButtons .severity-btn::before {
+            content: "\F309"; font-family: "bootstrap-icons";
+        }
+        #severityButtons .severity-btn:hover { transform: translateY(-1px); }
+        #severityButtons .severity-btn.active {
+            box-shadow: 0 0 0 3px rgba(15,23,42,.08), 0 6px 14px rgba(15,23,42,.15);
+            transform: translateY(-1px);
+        }
+        #severityButtons .btn-success { background:#10b981; border-color:#10b981; }
+        #severityButtons .btn-warning { background:#f59e0b; border-color:#f59e0b; color:#fff; }
+        #severityButtons .btn-danger  { background:#ef4444; border-color:#ef4444; }
+
+        #zoneSeverityBadge {
+            font-size: .8rem;
+            padding: .5rem .9rem;
+            background: #e2e8f0 !important;
+            color: var(--ink-700);
+            font-weight: 600;
+        }
+
+        /* ---------- Captura / IA ---------- */
+        .capture-zone {
+            border: 2px dashed rgba(79,70,229,.35);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            background: linear-gradient(135deg, #f8faff, #eef2ff);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .capture-preview {
+            width: 120px; height: 120px; border-radius: 12px;
+            object-fit: cover; border: 1px solid rgba(15,23,42,.1);
+            background: #fff; display: none;
+        }
+        .capture-preview.show { display: block; }
+        .ai-box {
+            margin-top: .75rem;
+            border-radius: var(--radius-md);
+            padding: .75rem 1rem;
+            font-size: .88rem;
+            display: none;
+            align-items: center;
+            gap: .6rem;
+            border-left: 4px solid var(--brand-2);
+            background: linear-gradient(135deg, #eff6ff, #ecfeff);
+        }
+        .ai-box.show { display: flex; }
+        .ai-box .ai-label { font-weight: 700; }
+        .ai-conf {
+            margin-left: auto; font-weight: 800; font-size: .82rem;
+            background: #fff; border-radius: 999px; padding: .2rem .6rem;
+            border: 1px solid rgba(15,23,42,.1);
+        }
+
+        #formMessage:not(:empty) {
+            background: #ecfdf5;
+            color: #047857 !important;
+            padding: .55rem 1rem;
+            border-radius: 10px;
+            border-left: 4px solid #10b981;
+            font-size: .9rem;
+        }
+        #formMessage.text-danger:not(:empty) {
+            background: #fef2f2;
+            color: #b91c1c !important;
+            border-left-color: #ef4444;
+        }
+
+        #reportForm button[type="submit"] {
+            border-radius: 12px;
+            padding: .8rem 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--brand-1), var(--brand-3));
+            border: none;
+            box-shadow: 0 10px 24px rgba(79,70,229,.35);
+            transition: transform .15s ease, box-shadow .2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        #reportForm button[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(79,70,229,.45);
+        }
+
+        /* ---------- Perfil / ranking mini ---------- */
+        .xp-bar {
+            height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden;
+        }
+        .xp-bar > span {
+            display: block; height: 100%;
+            background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+        }
+        .lb-row {
+            display: flex; align-items: center; gap: .6rem;
+            padding: .45rem 0; border-bottom: 1px solid rgba(15,23,42,.05);
+            font-size: .88rem;
+        }
+        .lb-row:last-child { border-bottom: none; }
+        .lb-rank {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--brand-1), var(--brand-3));
+            color: #fff; font-weight: 700; font-size: .72rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .lb-points { margin-left: auto; font-weight: 700; color: var(--brand-1); }
+
+        section { scroll-margin-top: 90px; }
+
+        @media (max-width: 991.98px) {
+            .stats-box { margin-top: 1rem; }
+            #mapa { height: 420px; }
+        }
+        @media (max-width: 575.98px) {
+            #mapa { height: 360px; }
+            .hero { padding: 1.5rem !important; }
+            .stat-number { font-size: 2.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barra superior de navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">Ciudad Inteligente</a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link" href="#mapa">Mapa</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#reportar">Reportar</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#alertas">Alertas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/missions">Misiones</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/profile">Mi perfil</a></li>
+                    <li class="nav-item ms-lg-3 mt-2 mt-lg-0 d-flex align-items-center gap-2">
+                        {% if profile %}
+                        <span class="badge eco" title="Eco-puntos">{{ profile.user.eco_points }} pts</span>
+                        {% endif %}
+                        <span class="badge">{{ user or 'Usuario' }}</span>
+                        <a class="btn btn-outline-light btn-sm" href="/logout">Salir</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal de la página -->
+    <main class="container py-4 py-lg-5">
+
+        <!-- Encabezado principal con título y estadísticas -->
+        <section class="hero card p-4 p-lg-5 mb-4">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8 position-relative">
+                    <h1 class="mt-3">Mapa inteligente de problemas urbanos en Cajamarca</h1>
+                    <p class="lead mb-0">
+                        Reporta fallas del entorno en Cajamarca y deja que la inteligencia artificial
+                        local clasifique, ubique y detecte zonas críticas automáticamente. Gana
+                        eco-puntos por colaborar.
+                    </p>
+                    <div class="d-flex gap-2 flex-wrap mt-4">
+                        <a href="#reportar" class="btn btn-primary btn-lg">Reportar problema</a>
+                        <a href="#mapa" class="btn btn-outline-dark btn-lg">Ver mapa</a>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <div class="stats-box">
+                        <div class="stat-number" id="totalReports">0</div>
+                        <div class="stat-label">reportes activos</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tarjetas de alertas y zonas críticas -->
+        <section class="row g-4 mb-4" id="alertas">
+            <div class="col-md-4">
+                <div class="card h-100 analytics-card critical">
+                    <div class="card-body">
+                        <div class="small text-uppercase fw-bold">Zona crítica</div>
+                        <h3 id="criticalZoneName">--</h3>
+                        <p id="criticalZoneInfo">--</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 analytics-card warning">
+                    <div class="card-body">
+                        <div class="small text-uppercase fw-bold">Reportes</div>
+                        <h3 id="criticalZoneCount">0</h3>
+                        <p>En la zona con mayor concentración</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 analytics-card success">
+                    <div class="card-body">
+                        <div class="small text-uppercase fw-bold">Predicción</div>
+                        <h3 id="criticalZonePrediction">--</h3>
+                        <p>Probabilidad de nuevos reportes</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección del mapa y lista de reportes -->
+        <section class="row g-4">
+            <div class="col-lg-8">
+                <div class="card h-100">
+                    <div class="card-header">
+                        Mapa de reportes
+                        <span class="map-tools">
+                            <button type="button" class="btn btn-outline-danger" id="toggleHeat">🔥 Mapa de calor</button>
+                            <button type="button" class="btn btn-outline-primary" id="toggleCluster">📍 Agrupar</button>
+                            <button type="button" class="btn btn-outline-success" id="toggleGeo" data-radius="{{ geofence_km }}">📡 Mi zona</button>
+                        </span>
+                    </div>
+                    <div class="map-wrapper">
+                        <div id="mapa" style="height: 520px; width: 100%;"></div>
+
+                        <!-- PIN CENTRAL (estilo Google Maps) -->
+                        <div class="center-pin" aria-hidden="true">
+                            <i class="bi bi-geo-alt-fill"></i>
+                            <span class="pin-shadow"></span>
+                        </div>
+
+                        <!-- Hint inferior -->
+                        <div class="map-hint">
+                            <i class="bi bi-info-circle"></i>
+                            <span id="mapHintText">Mueve el mapa para ubicar el reporte</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm h-100 d-flex flex-column">
+                    <div class="card-header bg-white fw-bold">Últimos reportes</div>
+                    <div class="list-group list-group-flush" id="reportsList" style="flex:1 1 auto;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Ranking comunitario -->
+        <section class="row g-4 mt-1">
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">🏆 Ranking EcoEco</div>
+                    <div class="card-body" id="leaderboardList">
+                        {% for row in leaderboard %}
+                        <div class="lb-row">
+                            <span class="lb-rank">{{ loop.index }}</span>
+                            <span class="fw-semibold">{{ row.name }}</span>
+                            <span class="lb-points">{{ row.eco_points }} pts</span>
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0 small">Aún no hay actividad comunitaria.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="card h-100">
+                    <div class="card-header">🎮 Tu progreso</div>
+                    <div class="card-body">
+                        {% if profile %}
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <div>
+                                <div class="text-muted small">Nivel</div>
+                                <div class="fs-3 fw-bold">{{ profile.progress.level }}</div>
+                            </div>
+                            <div class="flex-grow-1" style="min-width:200px;">
+                                <div class="d-flex justify-content-between small text-muted">
+                                    <span>{{ profile.user.eco_points }} eco-puntos</span>
+                                    <span>{{ profile.progress.current }}/{{ profile.progress.target }} al siguiente nivel</span>
+                                </div>
+                                <div class="xp-bar mt-1">
+                                    <span style="width: {{ profile.progress.pct }}%;"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex flex-wrap gap-2">
+                            {% for b in profile.badges %}
+                            <span class="badge rounded-pill text-bg-light border" title="{{ b.description }}">🏅 {{ b.name }}</span>
+                            {% else %}
+                            <span class="text-muted small">Aún no tienes insignias. ¡Reporta un problema para empezar!</span>
+                            {% endfor %}
+                        </div>
+                        <a href="/profile" class="btn btn-sm btn-outline-dark mt-3">Ver mi perfil completo</a>
+                        {% else %}
+                        <p class="text-muted mb-0 small">Inicia sesión para ver tu progreso.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Formulario para reportar un problema -->
+        <section class="card mt-4" id="reportar">
+            <div class="card-body">
+                <h2 class="h3 mb-3">Reportar un problema urbano</h2>
+                <form id="reportForm" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="title" class="form-label">Título</label>
+                            <input type="text" class="form-control" id="title" placeholder="Ej. Bache grande en avenida central" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="zone" class="form-label">Zona</label>
+                            <select class="form-select" id="zone">
+                                <option value="Centro">Centro</option>
+                                <option value="Norte">Norte</option>
+                                <option value="Sur">Sur</option>
+                                <option value="Este">Este</option>
+                                <option value="Oeste">Oeste</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="group" class="form-label">Tipo de incidencia</label>
+                            <select class="form-select" id="group">
+                                <option value="">Detectar automáticamente (IA)</option>
+                                <option value="BASURA">Basura / residuos</option>
+                                <option value="INFRAESTRUCTURA">Daño estructural</option>
+                                <option value="RIESGO">Riesgo / seguridad</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="description" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="description" rows="3" placeholder="Describe el problema con detalles" required></textarea>
+                        </div>
+
+                        <!-- Captura de cámara + IA local -->
+                        <div class="col-12">
+                            <label class="form-label">Foto (opcional) · la IA local la analizará automáticamente</label>
+                            <div class="capture-zone">
+                                <img id="photoPreview" class="capture-preview" alt="Vista previa" />
+                                <div class="flex-grow-1">
+                                    <input type="file" id="photo" name="photo" accept="image/*" capture="environment" class="form-control">
+                                    <div class="form-text">En móvil abre la cámara directamente. Formatos: PNG, JPG, WEBP.</div>
+                                </div>
+                            </div>
+                            <div class="ai-box" id="aiResult">
+                                <i class="bi bi-cpu"></i>
+                                <span><span class="ai-label" id="aiLabel">--</span> · clasificación local (on-device)</span>
+                                <span class="ai-conf" id="aiConf">0%</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <label for="lat" class="form-label">Latitud</label>
+                            <input type="number" step="any" class="form-control" id="lat" value="{{ default_lat }}">
+                        </div>
+                        <div class="col-md-5">
+                            <label for="lng" class="form-label">Longitud</label>
+                            <input type="number" step="any" class="form-control" id="lng" value="{{ default_lng }}">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-primary w-100" id="geoBtn" title="Usar mi ubicación actual">
+                                <i class="bi bi-crosshair"></i> Mi GPS
+                            </button>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Gravedad de la zona</label>
+                            <div class="d-flex flex-wrap gap-2" id="severityButtons">
+                                <button type="button" class="btn btn-success btn-sm severity-btn" data-severity="bajo">No tan grave</button>
+                                <button type="button" class="btn btn-warning btn-sm severity-btn" data-severity="intermedio">Intermedio</button>
+                                <button type="button" class="btn btn-danger btn-sm severity-btn active" data-severity="critico">Crítico</button>
+                            </div>
+                            <input type="hidden" id="severity_level" value="critico">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                                <div class="small text-muted">Estado actual</div>
+                                <span id="zoneSeverityBadge" class="badge rounded-pill bg-secondary">Sin evaluar</span>
+                            </div>
+                        </div>
+                        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                            <div id="formMessage" class="fw-semibold"></div>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-send-fill"></i>
+                                Enviar reporte en Cajamarca
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

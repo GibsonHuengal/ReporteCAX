@@ -1,0 +1,29 @@
+# --- Entornos virtuales ---
+.venv/
+.venv*/
+venv/
+env/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# --- Datos en tiempo de ejecución (se regeneran con seed_users.py) ---
+**/data/*.json
+
+# --- Imágenes subidas por los usuarios ---
+**/static/uploads/*
+!static/uploads/.gitkeep
+
+# --- Configuración local / secretos ---
+.env
+*.local
+
+# --- Editores ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
